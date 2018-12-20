@@ -24,6 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die;
 
+require_once(__DIR__ . '/locallib.php');
+
 $settings = new admin_settingpage('localamigo', get_string('pluginname', 'local_amigo'));
 $ADMIN->add('localplugins', $settings);
 
@@ -36,18 +38,25 @@ if ($hassiteconfig && $ADMIN->fulltree) {
          1);
     $settings->add($item);
 
-    // Rest.
-    $settings->add(new admin_setting_heading('rest', get_string('rest', 'local_amigo'), get_string('rest_help', 'local_amigo')));
-    $settings->add(new admin_setting_configcheckbox('local_amigo/restenabled',
-         new lang_string('enabled', 'local_amigo'), '', 1));
+    // Hardcoded pokes list.
+    $pokes = local_amigo_all_pokes_list();
 
-    // Return to studies.
-    $settings->add(new admin_setting_heading('returnstudies', get_string('returnstudies', 'local_amigo'), get_string('returnstudies_help', 'local_amigo')));
-    $settings->add(new admin_setting_configcheckbox('local_amigo/returnstudiesenabled',
-         new lang_string('enabled', 'local_amigo'), '', 1));
+    // Enabled pokes.
+    $settings->add(new admin_setting_heading('enabledpokes', get_string('enabledpokes', 'local_amigo'), ''));
+    foreach ($pokes as $poke) {
+        $settings->add(new admin_setting_configcheckbox('local_amigo/' . $poke . 'enabled',
+             new lang_string($poke, 'local_amigo'),
+             new lang_string($poke . '_help', 'local_amigo'), 1));
+    }
 
-    // Greetings.
-    $settings->add(new admin_setting_heading('greetings', get_string('greetings', 'local_amigo'), get_string('greetings_help', 'local_amigo')));
-    $settings->add(new admin_setting_configcheckbox('local_amigo/greetingsenabled',
-         new lang_string('enabled', 'local_amigo'), '', 1));
+    // Frequency.
+    $settings->add(new admin_setting_heading('freqpokes', get_string('freqpokes', 'local_amigo'), get_string('freqpokes_help', 'local_amigo')));
+    foreach ($pokes as $poke) {
+
+        // Default to every 2 days.
+        $settings->add(new admin_setting_configduration('local_amigo/' . $poke . 'freq',
+             new lang_string($poke, 'local_amigo'), '', 172800, PARAM_INT));
+    }
+
+    // Specific settings.
 }

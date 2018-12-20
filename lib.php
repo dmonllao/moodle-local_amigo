@@ -24,8 +24,10 @@
 
 defined('MOODLE_INTERNAL') || die;
 
+require_once(__DIR__ . '/locallib.php');
+
 function local_amigo_before_footer() {
-    global $PAGE, $CFG;
+    global $PAGE, $CFG, $USER;
 
     $config = get_config('local_amigo');
     if (!$config->enabled) {
@@ -38,6 +40,43 @@ function local_amigo_before_footer() {
         'hour' => $usertime->format('H'),
     ];
 
-    $notificationimg = new \moodle_url('/local/amigo/pix/chuck.jpg');
-    $PAGE->requires->js_call_amd('local_amigo/amigo', 'init', [$config, $timeinfo, $notificationimg->out()]);
+    $pokes = local_amigo_all_pokes_list();
+
+    $activepokes = [];
+    foreach ($pokes as $poke) {
+        $lastpoke = get_user_preferences('local_amigo_last_poke_' . $poke, 0);
+
+        $pokefreq = intval($config->{$poke . 'freq'});
+
+        $now = new \DateTime("now", new \DateTimeZone("UTC"));
+        if ($lastpoke + $pokefreq < $now->getTimestamp()) {
+            $activepokes[$poke] = true;
+        }
+    }
+
+    $PAGE->requires->js_call_amd('local_amigo/amigo', 'init', [$activepokes, $config, $timeinfo, $USER->id]);
+}
+
+/**
+ * Callback to define user preferences.
+ *
+ * @return array
+ */
+function local_amigo_user_preferences() {
+    $preferences = [];
+
+    foreach (local_amigo_all_pokes_list() as $poke) {
+        $preferences['local_amigo_last_poke_' . $poke] = array(
+            'type' => PARAM_INT,
+            'null' => NULL_NOT_ALLOWED,
+            'default' => 0,
+            'permissioncallback' => function($user, $preferencename) {
+                global $USER;
+                return $user->id == $USER->id;
+            }
+        );
+    }
+
+
+    return $preferences;
 }

@@ -15,16 +15,15 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version details.
+ * Local functions.
  *
  * @package    local_amigo
  * @copyright  David Monllao Olive
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+defined('MOODLE_INTERNAL') || die;
 
-$plugin->version   = 2018122002;
-$plugin->requires  = 2018051700; // Moodle 3.5.
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->component = 'local_amigo';
+function local_amigo_all_pokes_list() {
+    return ['rest', 'returnstudies', 'greetings'];
+}

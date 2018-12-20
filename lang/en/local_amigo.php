@@ -21,11 +21,14 @@
  */
 
 $string['enabled'] = 'Enable';
+$string['enabledpokes'] = 'Enabled pokes';
 $string['enabled_help'] = 'General on / off switch. This setting has preference over the settings below.';
+$string['freqpokes'] = 'Pokes frequency';
+$string['freqpokes_help'] = 'The frequency in which pokes are generated.';
 $string['pluginname'] = 'Moodle amigo';
 $string['greetings'] = 'Greetings';
 $string['greetings_help'] = 'Good morning / afternoon / night.';
 $string['rest'] = 'Rest';
-$string['rest_help'] = 'To rest for a while after spending too much time actively looking at the same page is recommended to users. This ping is not active on pages with audio or video resources.';
+$string['rest_help'] = 'To rest for a while after spending too much time actively looking at the same page is recommended to users. This poke is not active on pages with audio or video resources.';
 $string['returnstudies'] = 'Return to your studies';
-$string['returnstudies_help'] = 'To return to Moodle after being inactive for a while is recommended to users. This ping is not active after opening resource activities.';
+$string['returnstudies_help'] = 'To return to Moodle after being inactive for a while is recommended to users. This poke is not active after opening resource activities.';
