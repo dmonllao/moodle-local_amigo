@@ -29,6 +29,10 @@ require_once(__DIR__ . '/locallib.php');
 function local_amigo_before_footer() {
     global $PAGE, $CFG, $USER;
 
+    if (!isloggedin()) {
+        return;
+    }
+
     $config = get_config('local_amigo');
     if (!$config->enabled) {
         return;
@@ -40,6 +44,7 @@ function local_amigo_before_footer() {
         'hour' => $usertime->format('H'),
     ];
 
+    // TODO Support other components than local_amigo.
     $pokes = local_amigo_all_pokes_list();
 
     $activepokes = [];
@@ -54,7 +59,12 @@ function local_amigo_before_footer() {
         }
     }
 
-    $PAGE->requires->js_call_amd('local_amigo/amigo', 'init', [$activepokes, $config, $timeinfo, $USER->id]);
+    $user = (object)[
+        'id' => $USER->id,
+        'fullname' => fullname($USER),
+    ];
+
+    $PAGE->requires->js_call_amd('local_amigo/amigo', 'init', [$activepokes, $config, $timeinfo, $user]);
 }
 
 /**

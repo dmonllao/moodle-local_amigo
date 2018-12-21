@@ -1,27 +1,28 @@
 define(['jquery'], function($) {
 
-    var PokeReturnStudies = function PokeReturnStudies(config, usertime, userid) {
+    var PokeReturnStudies = function PokeReturnStudies(config, timeInfo, user) {
         this.config = config;
-        this.usertime = usertime;
-        this.userid = userid;
+        this.timeInfo = timeInfo;
+        this.user = user;
     };
 
     PokeReturnStudies.prototype.config = {};
-    PokeReturnStudies.prototype.usertime = {};
-    PokeReturnStudies.prototype.userid;
+    PokeReturnStudies.prototype.timeInfo = {};
+    PokeReturnStudies.prototype.user;
 
     PokeReturnStudies.prototype.getCallback = function getCallback() {
-        return function(focused, counterActive, counterInactive, counterLastInactive, lastState) {
-            if (counterLastInactive > 3) {
+        return function(currentView, focused, lastState) {
+            if (currentView.counterLastInactive > 3) {
                 return [
-                    'returnstudies',
                     'Chuck says...',
                     'Hey mate, close the facebook tab and return to your studies.',
+                    'returnstudies',
                     function() {
                         window.focus();
                     }
                 ];
             }
+            return false;
         }.bind(this);
     };
 
