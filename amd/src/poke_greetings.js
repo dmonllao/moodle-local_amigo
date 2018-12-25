@@ -8,7 +8,7 @@ define(['jquery'], function($) {
 
     PokeGreetings.prototype.config = {};
     PokeGreetings.prototype.timeInfo = {};
-    PokeGreetings.prototype.user;
+    PokeGreetings.prototype.user = {};
 
     PokeGreetings.prototype.getCallback = function getCallback() {
         return function(currentView, focused, lastState) {

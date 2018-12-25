@@ -27,17 +27,24 @@ define(['jquery', 'core/config', 'core/url', 'core/ajax', 'core/notification', '
             return;
         }
 
+        if (Notification.permission === "denied") {
+            // TODO Send a "come on mate activate notifications through MoodleNotification".
+            return;
+        }
+
         this.timeTracker = setInterval(this.trackActive.bind(this), TRACK_INTERVAL);
 
         if (Notification.permission !== "granted") {
-            Notification.requestPermission().then(function(result) {
-                permission = result;
-                if (result === "granted") {
-                    // Brief explanation about the tool.
-                    this.sendNotification('Hi from Chuck', 'Hello, I am your personal moodle-amigo.');
-                }
-                this.done();
-            }.bind(this));
+            Notification.requestPermission()
+                .then(function(permission) {
+                    if (permission === "granted" && this.user.introshowed != 1) {
+                        // Brief explanation about the tool.
+                        this.sendNotification('Hi from Chuck', 'Hello, I am your personal moodle-amigo.');
+                    }
+                    this.done();
+                }.bind(this)
+                .fail(MoodleNotification.exception)
+            );
         }
 
         // Store the page.

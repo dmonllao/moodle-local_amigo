@@ -8,7 +8,7 @@ define(['jquery'], function($) {
 
     PokeReturnStudies.prototype.config = {};
     PokeReturnStudies.prototype.timeInfo = {};
-    PokeReturnStudies.prototype.user;
+    PokeReturnStudies.prototype.user = {};
 
     PokeReturnStudies.prototype.getCallback = function getCallback() {
         return function(currentView, focused, lastState) {

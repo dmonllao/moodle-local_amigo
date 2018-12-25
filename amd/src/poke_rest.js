@@ -10,7 +10,7 @@ define(['jquery', 'local_amigo/page_parser'], function($, PageParser) {
 
     PokeRest.prototype.config = {};
     PokeRest.prototype.timeInfo = {};
-    PokeRest.prototype.user;
+    PokeRest.prototype.user = {};
 
     PokeRest.prototype.getCallback = function getCallback() {
         return function(currentView, focused, lastState) {

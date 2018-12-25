@@ -62,6 +62,7 @@ function local_amigo_before_footer() {
     $user = (object)[
         'id' => $USER->id,
         'fullname' => fullname($USER),
+        'introshowed' => get_user_preferences('local_amigo_intro', 0),
     ];
 
     $PAGE->requires->js_call_amd('local_amigo/amigo', 'init', [$activepokes, $config, $timeinfo, $user]);
@@ -76,7 +77,7 @@ function local_amigo_user_preferences() {
     $preferences = [];
 
     foreach (local_amigo_all_pokes_list() as $poke) {
-        $preferences['local_amigo_last_poke_' . $poke] = array(
+        $preferences['local_amigo_last_poke_' . $poke] = [
             'type' => PARAM_INT,
             'null' => NULL_NOT_ALLOWED,
             'default' => 0,
@@ -84,9 +85,19 @@ function local_amigo_user_preferences() {
                 global $USER;
                 return $user->id == $USER->id;
             }
-        );
+        ];
     }
 
+    // The user has seen the intro to local_amigo.
+    $preferences['local_amigo_intro'] = [
+        'type' => PARAM_INT,
+        'null' => NULL_NOT_ALLOWED,
+        'default' => 0,
+        'permissioncallback' => function($user, $preferencename) {
+            global $USER;
+            return $user->id == $USER->id;
+        }
+    ];
 
     return $preferences;
 }
