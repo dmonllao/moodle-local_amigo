@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<libraries>
+  <library>
+    <location>amd/src/</location>
+    <name>Crypto-JS</name>
+    <license>GPLv3</license>
+    <version>3.1.9</version>
+    <licenseversion></licenseversion>
+  </library>
+</libraries>

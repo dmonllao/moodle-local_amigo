@@ -1,10 +1,10 @@
 
-define(['jquery', 'core/url', 'core/ajax', 'core/notification', 'core/sessionstorage'],
-        function($, Url, Ajax, MoodleNotification, sess) {
+define(['jquery', 'core/config', 'core/url', 'core/ajax', 'core/notification', 'local_amigo/aes', 'local_amigo/core'],
+        function($, config, Url, Ajax, MoodleNotification, AES, CryptoJS) {
 
-    var INTERVAL = 1000;
+    var TRACK_INTERVAL = 1000;
 
-    var NOTIFICATION_TIMEOUT = 5000;
+    var NOTIFICATION_TIMEOUT = 7000;
 
     var Amigo = function Amigo(pokes, config, timeInfo, user) {
 
@@ -22,11 +22,12 @@ define(['jquery', 'core/url', 'core/ajax', 'core/notification', 'core/sessionsto
             this.callbacks.push(this.pokes[i].getCallback());
         }
 
-        this.timeTracker = setInterval(this.trackActive.bind(this), INTERVAL);
         if (!("Notification" in window)) {
             console.log("This browser does not support desktop notification");
             return;
         }
+
+        this.timeTracker = setInterval(this.trackActive.bind(this), TRACK_INTERVAL);
 
         if (Notification.permission !== "granted") {
             Notification.requestPermission().then(function(result) {
@@ -39,12 +40,19 @@ define(['jquery', 'core/url', 'core/ajax', 'core/notification', 'core/sessionsto
             }.bind(this));
         }
 
+        // Store the page.
         this.currentView.pageId = $('body').attr('id');
 
-        var prevViews = sessionStorage.getItem('views')
-        if (prevViews) {
-            this.previousViews = JSON.parse(prevViews);
-        }
+        // Store the page layout.
+        $('body').attr('class').split(' ').forEach(function(value) {
+            if (value.match(/^pagelayout-/)) {
+                this.currentView.pageLayout = value.substr(11);
+            }
+        }.bind(this));
+
+        // Retrieve past viewed pages in this session, DESC sorting.
+        this.previousViews = this.getPreviousViews();
+        console.log(this.previousViews);
     };
 
     Amigo.prototype.config = {};
@@ -127,8 +135,9 @@ define(['jquery', 'core/url', 'core/ajax', 'core/notification', 'core/sessionsto
         // Update the last state.
         this.lastState = focused;
 
-        // Update the session data with this last page.
-        sessionStorage.setItem('views', JSON.stringify([this.currentView].concat(this.previousViews)));
+        // Update the session history data with this last page view numbers.
+        // TODO We might want to save every few iterations instead of after each iteration.
+        this.storeSessionViews();
     };
 
     Amigo.prototype.done = function done() {
@@ -145,7 +154,7 @@ define(['jquery', 'core/url', 'core/ajax', 'core/notification', 'core/sessionsto
             this.notification.close();
         }
 
-        // New notification.
+
         this.notification = new Notification(title, {
             'icon': Url.relativeUrl('local/amigo/pix/chuck.jpg'),
             'body': body,
@@ -164,6 +173,9 @@ define(['jquery', 'core/url', 'core/ajax', 'core/notification', 'core/sessionsto
             this.notification.close();
 
         }.bind(this);
+
+        // Automatically close it after a while.
+        setTimeout(this.notification.close.bind(this.notification), NOTIFICATION_TIMEOUT);
     };
 
     Amigo.prototype.storeLastPoke = function storeLastPoke(pokeKey) {
@@ -181,6 +193,27 @@ define(['jquery', 'core/url', 'core/ajax', 'core/notification', 'core/sessionsto
             },
             fail: MoodleNotification.exception
         }]);
+    };
+
+    Amigo.prototype.getPreviousViews = function getPreviousViews() {
+
+        var encodedViews = sessionStorage.getItem('views');
+        if (encodedViews) {
+            var prevViews = AES.decrypt(encodedViews, config.sesskey);
+            try {
+                return JSON.parse(prevViews.toString(CryptoJS.enc.Utf8));
+            } catch (exception) {
+                // Clear sessionStorage contents if there is no match using the current user sesskey.
+                sessionStorage.removeItem('views');
+            }
+        }
+
+        return [];
+    };
+
+    Amigo.prototype.storeSessionViews = function storeSessionViews() {
+        var str = JSON.stringify([this.currentView].concat(this.previousViews));
+        sessionStorage.setItem('views', AES.encrypt(str, config.sesskey).toString());
     };
 
     return {
