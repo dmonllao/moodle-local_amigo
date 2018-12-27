@@ -1,4 +1,4 @@
-define(['jquery'], function($) {
+define(function() {
 
     var PokeGreetings = function PokeGreetings(config, timeInfo, user, site) {
         this.config = config;
@@ -14,7 +14,7 @@ define(['jquery'], function($) {
 
     PokeGreetings.prototype.getCallback = function getCallback() {
         // http://www.rocketmemory.com/articles/memory-improvement/
-        return function(currentView, isActive, isIdle) {
+        return function() {
 
             if (this.timeInfo.dayweek == 6 || this.timeInfo.dayweek == 0) {
                 return [
@@ -42,7 +42,7 @@ define(['jquery'], function($) {
                 ];
             } else if (this.timeInfo.hour < 12) {
                 return [
-                    'Good morning amigo',
+                    'Hey amigo!',
                     'This is the best time of the day for test-review, problem-solving, report-writing, and math-oriented work.',
                     'greetings',
                     null,

@@ -1,7 +1,7 @@
-define(['jquery'], function($) {
+define(function() {
 
-    // TODO Set up a realistic time.
-    var POKE_AFTER = 3;
+    // 3 mins (in seconds).
+    var POKE_AFTER = 3 * 60;
 
     var PokeReturnStudies = function PokeReturnStudies(config, timeInfo, user, site) {
         this.config = config;
@@ -16,12 +16,12 @@ define(['jquery'], function($) {
     PokeReturnStudies.prototype.site = {};
 
     PokeReturnStudies.prototype.getCallback = function getCallback() {
-        return function(currentView, isActive, isIdle) {
+        return function(currentView, isActive) {
             if (!isActive && currentView.counterLastInactive > POKE_AFTER) {
                 return [
                     'Hey amigo',
                     'You abandoned ' + this.site.fullname + ' halfway through an activity, ' +
-                        'come on mate, return to your studies!',
+                        'come on mate, return to your studies.',
                     'returnstudies',
                     function() {
                         window.focus();

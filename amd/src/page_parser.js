@@ -15,7 +15,7 @@ define(['jquery'], function($) {
             var text = main.html()
                 .replace(/<\/?[^>]+(>|$)/g, ' ')
                 .replace(/\s\s+/g, ' ')
-                .replace(/(?:\r\n|\r|\n|,|;|\.)/ig, ' ')
+                .replace(/(?:\r\n|\r|\n|,|;|\.)/ig, ' ');
 
             return text.split(' ').length;
         },

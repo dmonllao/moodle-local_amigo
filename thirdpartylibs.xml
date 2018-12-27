@@ -1,8 +1,57 @@
 <?xml version="1.0"?>
 <libraries>
   <library>
-    <location>amd/src/</location>
-    <name>Crypto-JS</name>
+    <location>amd/src/core.js</location>
+    <name>Crypto-JS core</name>
+    <license>GPLv3</license>
+    <version>3.1.9</version>
+    <licenseversion></licenseversion>
+  </library>
+  <library>
+    <location>amd/src/cipher-core.js</location>
+    <name>Crypto-JS cipher-core</name>
+    <license>GPLv3</license>
+    <version>3.1.9</version>
+    <licenseversion></licenseversion>
+  </library>
+  <library>
+    <location>amd/src/aes.js</location>
+    <name>Crypto-JS aes</name>
+    <license>GPLv3</license>
+    <version>3.1.9</version>
+    <licenseversion></licenseversion>
+  </library>
+  <library>
+    <location>amd/src/enc-base64.js</location>
+    <name>Crypto-JS enc-base64</name>
+    <license>GPLv3</license>
+    <version>3.1.9</version>
+    <licenseversion></licenseversion>
+  </library>
+  <library>
+    <location>amd/src/evpkdf.js</location>
+    <name>Crypto-JS evpkdf</name>
+    <license>GPLv3</license>
+    <version>3.1.9</version>
+    <licenseversion></licenseversion>
+  </library>
+  <library>
+    <location>amd/src/hmac.js</location>
+    <name>Crypto-JS hmac</name>
+    <license>GPLv3</license>
+    <version>3.1.9</version>
+    <licenseversion></licenseversion>
+  </library>
+  <library>
+    <location>amd/src/md5.js</location>
+    <name>Crypto-JS md5</name>
+    <license>GPLv3</license>
+    <version>3.1.9</version>
+    <licenseversion></licenseversion>
+  </library>
+  <library>
+    <location>amd/src/sha1.js</location>
+    <name>Crypto-JS sha1</name>
     <license>GPLv3</license>
     <version>3.1.9</version>
     <licenseversion></licenseversion>

@@ -1,7 +1,10 @@
 define(['jquery', 'local_amigo/page_parser'], function($, PageParser) {
 
-    // TODO Set up a realistic time.
-    var POKE_AFTER = 20;
+    // TODO This poke should ideally check your session and sum all resources
+    // active time.
+
+    // 1 hour (in seconds).
+    var POKE_AFTER = 1 * 60 * 60;
 
     // In words.
     var MIN_CONTENT_LENGTH = 200;
@@ -19,13 +22,13 @@ define(['jquery', 'local_amigo/page_parser'], function($, PageParser) {
     PokeRest.prototype.site = {};
 
     PokeRest.prototype.getCallback = function getCallback() {
-        return function(currentView, isActive, isIdle) {
+        return function(currentView, isActive) {
 
-            if (!isActive || isIdle) {
+            if (!isActive) {
                 return false;
             }
 
-            wordCount = PageParser.mainRegionWordCount();
+            var wordCount = PageParser.mainRegionWordCount();
             if (currentView.counterActive > POKE_AFTER && wordCount > MIN_CONTENT_LENGTH) {
                 return [
                     'Hey Mate!',
@@ -40,7 +43,7 @@ define(['jquery', 'local_amigo/page_parser'], function($, PageParser) {
             }
             return false;
         }.bind(this);
-    }
+    };
 
     PokeRest.prototype.getTargetPages = function getTargetPages() {
         return ['page-mod-book-view', 'page-mod-page-view'];

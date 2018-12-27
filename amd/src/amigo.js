@@ -1,4 +1,3 @@
-
 define(['jquery', 'core/config', 'core/url', 'core/ajax', 'local_amigo/idle',
             'core/notification', 'local_amigo/aes', 'local_amigo/core'],
         function($, config, Url, Ajax, Idle,
@@ -8,9 +7,10 @@ define(['jquery', 'core/config', 'core/url', 'core/ajax', 'local_amigo/idle',
 
     var NOTIFICATION_TIMEOUT = 7000;
 
-    var Amigo = function Amigo(pokes, config, timeInfo, user, site) {
+    // TODO This lock should be unique to this Moodle site.
+    var SESSION_STORAGE_PREFIX = 'localamigo';
 
-        // TODO Detect multiple Moodle tabs.
+    var Amigo = function Amigo(pokes, config, timeInfo, user, site) {
 
         this.pokes = pokes;
         this.config = config;
@@ -27,14 +27,20 @@ define(['jquery', 'core/config', 'core/url', 'core/ajax', 'local_amigo/idle',
         }
 
         if (!("Notification" in window)) {
-            console.log("This browser does not support desktop notification");
+            window.console.log("This browser does not support desktop notification");
             return;
         }
 
         if (Notification.permission === "denied") {
-            // TODO Send a reminder: "Activate notifications through MoodleNotification".
+            // TODO Send a reminder: "Activate notifications mate" through MoodleNotification.
             return;
         }
+
+        // TODO Multi-tab support
+        // Disable the amigo when there are multiple tabs opened.
+        // if (!this.processLock()) {
+        //     return;
+        // }
 
         // Store the page layout.
         // var bodyClasses = $('body').attr('class').split(' ');
@@ -92,7 +98,7 @@ define(['jquery', 'core/config', 'core/url', 'core/ajax', 'local_amigo/idle',
 
         // Retrieve past viewed pages in this session, DESC sorting.
         this.previousViews = this.getPreviousViews();
-        console.log(this.previousViews);
+        window.console.log(this.previousViews);
     };
 
     Amigo.prototype.config = {};
@@ -100,7 +106,7 @@ define(['jquery', 'core/config', 'core/url', 'core/ajax', 'local_amigo/idle',
     Amigo.prototype.user = {};
     Amigo.prototype.site = {};
 
-    Amigo.prototype.idle;
+    Amigo.prototype.idle = false;
 
     Amigo.prototype.pokes = [];
     Amigo.prototype.callbacks = [];
@@ -115,19 +121,19 @@ define(['jquery', 'core/config', 'core/url', 'core/ajax', 'local_amigo/idle',
     };
     Amigo.prototype.previousViews = [];
 
-    Amigo.prototype.lastState;
+    Amigo.prototype.lastState = null;
 
     /**
      * @var {Notification} notification
      * @private
      */
-    Amigo.prototype.notification;
+    Amigo.prototype.notification = null;
 
     /**
      * @var {intervalID} timeTracker
      * @private
      */
-    Amigo.prototype.timeTracker;
+    Amigo.prototype.timeTracker = null;
 
     Amigo.prototype.trackActive = function trackActive() {
 
@@ -137,8 +143,8 @@ define(['jquery', 'core/config', 'core/url', 'core/ajax', 'local_amigo/idle',
             return;
         }
 
-        isActive = document.hasFocus();
-        isIdle = this.idle.isIdle();
+        var isActive = document.hasFocus();
+        var isIdle = this.idle.isIdle();
 
         if (isActive) {
             this.currentView.counterActive++;
@@ -154,7 +160,7 @@ define(['jquery', 'core/config', 'core/url', 'core/ajax', 'local_amigo/idle',
             this.currentView.counterIdle = 0;
         }
 
-        console.log('Active: ' + this.currentView.counterActive +
+        window.console.log('Active: ' + this.currentView.counterActive +
                     ' Active last: ' + this.currentView.counterLastActive +
                     ' Inactive: ' + this.currentView.counterInactive +
                     ' Inactive last: ' + this.currentView.counterLastInactive +
@@ -178,9 +184,9 @@ define(['jquery', 'core/config', 'core/url', 'core/ajax', 'local_amigo/idle',
             }
         }
 
-        if (isActive == true && this.lastState == false) {
+        if (isActive === true && this.lastState === false) {
             this.currentView.counterLastActive = 0;
-        } else if (isActive == false && this.lastState == true) {
+        } else if (isActive === false && this.lastState === true) {
             this.currentView.counterLastInactive = 0;
         }
 
@@ -249,16 +255,35 @@ define(['jquery', 'core/config', 'core/url', 'core/ajax', 'local_amigo/idle',
         }]);
     };
 
+    // TODO Multi-tab support. Explore setInterval possibility
+    //
+    // Amigo.prototype.processLock = function processLock() {
+
+    //     var lock = localStorage.getItem(SESSION_STORAGE_PREFIX + 'lock');
+    //     console.log(lock);
+    //     if (lock) {
+    //         return false;
+    //     }
+
+    //     $(window).on('unload', function() {
+    //         // Free the lock.
+    //         localStorage.removeItem(SESSION_STORAGE_PREFIX + 'lock');
+    //     });
+
+    //     localStorage.setItem(SESSION_STORAGE_PREFIX + 'lock', true);
+    //     return true;
+    // };
+
     Amigo.prototype.getPreviousViews = function getPreviousViews() {
 
-        var encodedViews = sessionStorage.getItem('views');
+        var encodedViews = sessionStorage.getItem(SESSION_STORAGE_PREFIX + 'views');
         if (encodedViews) {
             var prevViews = AES.decrypt(encodedViews, config.sesskey);
             try {
                 return JSON.parse(prevViews.toString(CryptoJS.enc.Utf8));
             } catch (exception) {
                 // Clear sessionStorage contents if there is no match using the current user sesskey.
-                sessionStorage.removeItem('views');
+                sessionStorage.removeItem(SESSION_STORAGE_PREFIX + 'views');
             }
         }
 
@@ -266,8 +291,10 @@ define(['jquery', 'core/config', 'core/url', 'core/ajax', 'local_amigo/idle',
     };
 
     Amigo.prototype.storeSessionViews = function storeSessionViews() {
+        // Encrypt the session stream using the user sesskey to prevent other users
+        // from accessing users' session stream.
         var str = JSON.stringify([this.currentView].concat(this.previousViews));
-        sessionStorage.setItem('views', AES.encrypt(str, config.sesskey).toString());
+        sessionStorage.setItem(SESSION_STORAGE_PREFIX + 'views', AES.encrypt(str, config.sesskey).toString());
     };
 
     return {
@@ -276,13 +303,16 @@ define(['jquery', 'core/config', 'core/url', 'core/ajax', 'local_amigo/idle',
             var promises = [];
             var pokes = [];
 
-            for (key in activePokes) {
+            for (var key in activePokes) {
                 // TODO Support other components' pokes.
-                moduleName = 'local_amigo/poke_' + key;
+                // moduleName exists in this block scope so it should be ok to call a function inside a loop
+                var moduleName = 'local_amigo/poke_' + key;
 
                 // Lazy-loading pokes.
                 promises.push($.Deferred());
                 require([moduleName], function(pokemodule) {
+
+                    // Note that pokemodule is a dynamic name.
                     pokes.push(new pokemodule(config, timeInfo, user, site));
                     promises.pop().resolve(moduleName);
                 });
