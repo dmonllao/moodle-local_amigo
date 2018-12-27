@@ -1,25 +1,29 @@
 
-define(['jquery', 'core/config', 'core/url', 'core/ajax', 'core/notification', 'local_amigo/aes', 'local_amigo/core'],
-        function($, config, Url, Ajax, MoodleNotification, AES, CryptoJS) {
+define(['jquery', 'core/config', 'core/url', 'core/ajax', 'local_amigo/idle',
+            'core/notification', 'local_amigo/aes', 'local_amigo/core'],
+        function($, config, Url, Ajax, Idle,
+            MoodleNotification, AES, CryptoJS) {
 
     var TRACK_INTERVAL = 1000;
 
     var NOTIFICATION_TIMEOUT = 7000;
 
-    var Amigo = function Amigo(pokes, config, timeInfo, user) {
+    var Amigo = function Amigo(pokes, config, timeInfo, user, site) {
+
+        // TODO Detect multiple Moodle tabs.
 
         this.pokes = pokes;
         this.config = config;
         this.timeInfo = timeInfo;
         this.user = user;
+        this.site = site;
+
+        this.idle = new Idle();
 
         if (this.pokes.length < 1) {
+            // It is not worth tracking the user activity across the session
+            // if no pokes will be generated.
             return;
-        }
-
-        // Register pokes' callbacks.
-        for (var i in this.pokes) {
-            this.callbacks.push(this.pokes[i].getCallback());
         }
 
         if (!("Notification" in window)) {
@@ -28,10 +32,49 @@ define(['jquery', 'core/config', 'core/url', 'core/ajax', 'core/notification', '
         }
 
         if (Notification.permission === "denied") {
-            // TODO Send a "come on mate activate notifications through MoodleNotification".
+            // TODO Send a reminder: "Activate notifications through MoodleNotification".
             return;
         }
 
+        // Store the page layout.
+        // var bodyClasses = $('body').attr('class').split(' ');
+        // for (var i in bodyClasses) {
+        //     if (bodyClasses[i].match(/^pagelayout-/)) {
+        //         this.currentView.pageLayout = bodyClasses[i].substr(11);
+        //     }
+        // }
+
+        // Store the page.
+        this.currentView.pageId = $('body').attr('id');
+
+        // Remove pokes whose targets are not this page. We will still track user activity
+        // as future visited pages in this same session might need this information.
+        var i = this.pokes.length;
+        while (i--) {
+            if (typeof this.pokes[i].getTargetPages !== "undefined") {
+                var targetPages = this.pokes[i].getTargetPages();
+
+                var matches = false;
+                for (var j in targetPages) {
+                    var regex = new RegExp(targetPages[j]);
+                    if (this.currentView.pageId.match(regex)) {
+                        matches = true;
+                        break;
+                    }
+                }
+                if (matches == false) {
+                    // Remove this poke.
+                    this.pokes.splice(i, 1);
+                }
+            }
+        }
+
+        // Register pokes' callbacks.
+        for (var i in this.pokes) {
+            this.callbacks.push(this.pokes[i].getCallback());
+        }
+
+        // Start the activity tracker.
         this.timeTracker = setInterval(this.trackActive.bind(this), TRACK_INTERVAL);
 
         if (Notification.permission !== "granted") {
@@ -47,16 +90,6 @@ define(['jquery', 'core/config', 'core/url', 'core/ajax', 'core/notification', '
             );
         }
 
-        // Store the page.
-        this.currentView.pageId = $('body').attr('id');
-
-        // Store the page layout.
-        $('body').attr('class').split(' ').forEach(function(value) {
-            if (value.match(/^pagelayout-/)) {
-                this.currentView.pageLayout = value.substr(11);
-            }
-        }.bind(this));
-
         // Retrieve past viewed pages in this session, DESC sorting.
         this.previousViews = this.getPreviousViews();
         console.log(this.previousViews);
@@ -65,6 +98,9 @@ define(['jquery', 'core/config', 'core/url', 'core/ajax', 'core/notification', '
     Amigo.prototype.config = {};
     Amigo.prototype.timeInfo = {};
     Amigo.prototype.user = {};
+    Amigo.prototype.site = {};
+
+    Amigo.prototype.idle;
 
     Amigo.prototype.pokes = [];
     Amigo.prototype.callbacks = [];
@@ -75,6 +111,7 @@ define(['jquery', 'core/config', 'core/url', 'core/ajax', 'core/notification', '
         counterLastActive: 0,
         counterInactive: 0,
         counterLastInactive: 0,
+        counterIdle: 0,
     };
     Amigo.prototype.previousViews = [];
 
@@ -100,9 +137,10 @@ define(['jquery', 'core/config', 'core/url', 'core/ajax', 'core/notification', '
             return;
         }
 
-        focused = document.hasFocus();
+        isActive = document.hasFocus();
+        isIdle = this.idle.isIdle();
 
-        if (focused) {
+        if (isActive) {
             this.currentView.counterActive++;
             this.currentView.counterLastActive++;
         } else {
@@ -110,14 +148,21 @@ define(['jquery', 'core/config', 'core/url', 'core/ajax', 'core/notification', '
             this.currentView.counterLastInactive++;
         }
 
+        if (isIdle) {
+            this.currentView.counterIdle++;
+        } else {
+            this.currentView.counterIdle = 0;
+        }
+
         console.log('Active: ' + this.currentView.counterActive +
                     ' Active last: ' + this.currentView.counterLastActive +
                     ' Inactive: ' + this.currentView.counterInactive +
-                    ' Inactive last: ' + this.currentView.counterLastInactive);
+                    ' Inactive last: ' + this.currentView.counterLastInactive +
+                    ' Idle: ' + this.currentView.counterIdle);
 
         for (var i in this.callbacks) {
 
-            var notificationData = this.callbacks[i](this.currentView, focused, this.lastState);
+            var notificationData = this.callbacks[i](this.currentView, isActive, isIdle);
             if (notificationData) {
                 this.sendNotification(notificationData[0], notificationData[1], notificationData[2], notificationData[3]);
 
@@ -133,14 +178,14 @@ define(['jquery', 'core/config', 'core/url', 'core/ajax', 'core/notification', '
             }
         }
 
-        if (focused == true && this.lastState == false) {
+        if (isActive == true && this.lastState == false) {
             this.currentView.counterLastActive = 0;
-        } else if (focused == false && this.lastState == true) {
+        } else if (isActive == false && this.lastState == true) {
             this.currentView.counterLastInactive = 0;
         }
 
         // Update the last state.
-        this.lastState = focused;
+        this.lastState = isActive;
 
         // Update the session history data with this last page view numbers.
         // TODO We might want to save every few iterations instead of after each iteration.
@@ -153,6 +198,8 @@ define(['jquery', 'core/config', 'core/url', 'core/ajax', 'core/notification', '
 
     Amigo.prototype.sendNotification = function sendNotification(title, body, pokeKey, clickCallback) {
 
+        // TODO Desktop notifications should only be used when the window does not have
+        // the focus, a web notification should be used if the window has the focus.
         if (typeof body == "undefined") {
             body = '';
         }
@@ -224,7 +271,7 @@ define(['jquery', 'core/config', 'core/url', 'core/ajax', 'core/notification', '
     };
 
     return {
-        init: function(activePokes, config, timeInfo, user) {
+        init: function(activePokes, config, timeInfo, user, site) {
 
             var promises = [];
             var pokes = [];
@@ -236,14 +283,14 @@ define(['jquery', 'core/config', 'core/url', 'core/ajax', 'core/notification', '
                 // Lazy-loading pokes.
                 promises.push($.Deferred());
                 require([moduleName], function(pokemodule) {
-                    pokes.push(new pokemodule(config, timeInfo, user));
+                    pokes.push(new pokemodule(config, timeInfo, user, site));
                     promises.pop().resolve(moduleName);
                 });
             }
 
             // Init our beloved amigo once all poke AMD modules are loaded.
             $.when.apply($, promises).then(function() {
-                new Amigo(pokes, config, timeInfo, user);
+                new Amigo(pokes, config, timeInfo, user, site);
             });
         }
     };

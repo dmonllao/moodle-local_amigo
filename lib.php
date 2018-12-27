@@ -27,21 +27,30 @@ defined('MOODLE_INTERNAL') || die;
 require_once(__DIR__ . '/locallib.php');
 
 function local_amigo_before_footer() {
-    global $PAGE, $CFG, $USER;
+    global $PAGE, $CFG, $USER, $SITE;
 
     if (!isloggedin()) {
         return;
     }
+
+    // At this early development stage let's try to not bother people.
+    // if (is_siteadmin()) {
+    //     return;
+    // }
 
     $config = get_config('local_amigo');
     if (!$config->enabled) {
         return;
     }
 
+    // Using PHP to get the current time as the user timezone needs to be considered.
     $usertime = new DateTime("now", core_date::get_user_timezone_object());
+
+    // 'time' format is for easy JS compliance.
     $timeinfo = [
         'dayweek' => $usertime->format('w'),
         'hour' => $usertime->format('H'),
+        'time' => $usertime->format(DateTime::RFC2822),
     ];
 
     // TODO Support other components than local_amigo.
@@ -59,13 +68,17 @@ function local_amigo_before_footer() {
         }
     }
 
-    $user = (object)[
+    $user = [
         'id' => $USER->id,
         'fullname' => fullname($USER),
         'introshowed' => get_user_preferences('local_amigo_intro', 0),
     ];
 
-    $PAGE->requires->js_call_amd('local_amigo/amigo', 'init', [$activepokes, $config, $timeinfo, $user]);
+    $site = [
+        'fullname' => $SITE->fullname,
+    ];
+
+    $PAGE->requires->js_call_amd('local_amigo/amigo', 'init', [$activepokes, $config, $timeinfo, $user, $site]);
 }
 
 /**
