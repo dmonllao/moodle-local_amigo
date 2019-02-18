@@ -7,6 +7,8 @@ Moodle amigo is Chuck Norris. He squires you through your learning adventure.
 - Allows admins to disable specific pokes.
 - Allows admins to edit poke's messages (like any other language string in Moodle)
 
+![Moodle amigo screenshot](https://github.com/dmonllao/moodle-local_amigo/raw/master/pix/your-moodle-amigou.png)
+
 This plugin is JS-based so there is no extra workload for the web server. The plugin provides a JS module (something like a mood API) so it is easy to add new JS pokes.
 
 **What does Moodle amigo poke me about?**
