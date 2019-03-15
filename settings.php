@@ -26,10 +26,10 @@ defined('MOODLE_INTERNAL') || die;
 
 require_once(__DIR__ . '/locallib.php');
 
-$settings = new admin_settingpage('localamigo', get_string('pluginname', 'local_amigo'));
-$ADMIN->add('localplugins', $settings);
-
 if ($hassiteconfig && $ADMIN->fulltree) {
+
+    $settings = new admin_settingpage('localamigo', get_string('pluginname', 'local_amigo'));
+    $ADMIN->add('localplugins', $settings);
 
     // General on / off.
     $item = new admin_setting_configcheckbox('local_amigo/enabled',
